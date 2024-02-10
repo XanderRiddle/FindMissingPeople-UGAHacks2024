@@ -1,4 +1,5 @@
 ﻿IMPORT $;
+IMPORT std;
 HMK := $.File_AllData;
 
 OUTPUT(HMK.unemp_ratesDS,NAMED('US_UnempByMonth'));
@@ -23,19 +24,16 @@ County_Fips_REC := RECORD
 END;
 
 
-County_Fips_REC County_Fips_Transform(County_Fips_Joined CFJ) := TRANSFORM
-    SELF.county_fips := CFJ.county_fips;
+County_Fips_REC County_Fips_Transform(HMK.mc_byStateDS Le,HMK.City_DS Ri) := TRANSFORM
+    SELF.county_fips := (STRING)Ri.county_fips;
 END;
 
-County_Fips_Joined := 
-JOIN( 
-    HMK.mc_byStateDS,
-    HMK.City_DS,
-    LEFT.missingcity = RIGHT.city AND LEFT.missingstate = RIGHT.state_id
-    County_Fips_REC(LEFT,RIGHT),LEFT OUTER)
-;
+County_Fips_Joined := JOIN(HMK.mc_byStateDS,HMK.City_DS,
+                      LEFT.missingcity = std.str.toUpperCase(RIGHT.city) AND 
+                      LEFT.missingstate = RIGHT.state_id,
+                      County_Fips_Transform(LEFT,RIGHT));
 
-OUTPUT(County_Fips_REC,NAMED('County_Fips'))
+OUTPUT(County_Fips_Joined,NAMED('County_Fips'))
 /*
 County_Fips_Temp := TRANSFORM
   JOIN(
