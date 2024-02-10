@@ -120,3 +120,19 @@ CT_FIPS_Population := JOIN(CT_FIPS, HMK.pop_estimatesDS(attribute = 'POP_ESTIMAT
 
 OUTPUT(SORT(CT_FIPS_Population,-number_of_missing_children),NAMED('CT_FIPS_Population'));
 OUTPUT(CORRELATION(SORT(CT_FIPS_Population,-number_of_missing_children),number_of_missing_children,population),NAMED('population_correlation'));
+
+Unemployment_Normalization_Record := RECORD
+  String county_fip;
+  DECIMAL normalized_unemployment;
+END;
+
+Unemployment_Normalization_Record Unemployement_Normaliztion_Transform(HMK.City_DS Le, HMK.unemp_byCountyDS Ri) := TRANSFORM
+  SELF.county_fip := Le.county_fips;
+  SELF.normalized_unemployment := ((Ri.value - 0.6)/(13-0.6))*100;
+END;
+
+Unemployment_Normalization := JOIN(HMK.City_DS, HMK.unemp_byCountyDS(Attribute = 'Unemployment_rate_2022'),
+  LEFT.county_fips = (STRING)RIGHT.fips_code,
+  Unemployement_Normaliztion_Transform(LEFT,RIGHT));
+  
+OUTPUT(SORT(Unemployment_Normalization, -normalized_unemployment),NAMED('Unemployment_Normalization'));
