@@ -4,9 +4,9 @@ HMK := $.File_AllData;
 
 //OUTPUT(HMK.unemp_ratesDS,NAMED('US_UnempByMonth'));
 //OUTPUT(CHOOSEN(HMK.unemp_byCountyDS,3000),NAMED('Unemployment'));
-OUTPUT(HMK.EducationDS,NAMED('Education'));
+//OUTPUT(HMK.EducationDS,NAMED('Education'));
 //OUTPUT(HMK.pov_estimatesDS,NAMED('Poverty'));
-//OUTPUT(HMK.pop_estimatesDS,NAMED('Population'));
+OUTPUT(HMK.pop_estimatesDS,NAMED('Population'));
 //OUTPUT(HMK.PoliceDS,NAMED('Police'));
 //OUTPUT(HMK.FireDS,NAMED('Fire'));
 //OUTPUT(HMK.HospitalDS,NAMED('Hospitals'));
@@ -76,3 +76,23 @@ CT_FIPS_Education := JOIN(CT_FIPS, HMK.EducationDS(attribute = 'Less than a high
 
 OUTPUT(SORT(CT_FIPS_Education,-number_of_missing_children),NAMED('CT_FIPS_Education'));
 OUTPUT(CORRELATION(SORT(CT_FIPS_Education,-number_of_missing_children),number_of_missing_children,no_education),NAMED('education_correlation'));
+
+CT_FIPS_Population_Record := RECORD
+  STRING county_fip;
+  INTEGER number_of_missing_children;
+  INTEGER population;
+ END;
+ 
+ CT_FIPS_Population_Record CT_FIPS_Population_Transform(CT_FIPS Le, HMK.pop_estimatesDS Ri) := TRANSFORM
+  SELF.county_fip := Le.county_fips;
+  SELF.number_of_missing_children := (INTEGER)Le.number_of_missing_children;
+  SELF.population := (INTEGER)Ri.value;
+END;
+
+CT_FIPS_Population := JOIN(CT_FIPS, HMK.pop_estimatesDS(attribute = 'POP_ESTIMATE_2022'),
+  LEFT.county_fips = (STRING)RIGHT.fips_code,
+  CT_FIPS_Population_Transform(LEFT,RIGHT));
+  
+
+OUTPUT(SORT(CT_FIPS_Population,-number_of_missing_children),NAMED('CT_FIPS_Population'));
+OUTPUT(CORRELATION(SORT(CT_FIPS_Population,-number_of_missing_children),number_of_missing_children,population),NAMED('population_correlation'))
