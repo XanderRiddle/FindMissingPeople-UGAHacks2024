@@ -1,4 +1,5 @@
-﻿IMPORT $;
+﻿
+IMPORT $;
 IMPORT std;
 HMK := $.File_AllData;
 
@@ -99,3 +100,23 @@ CT_FIPS_Poverty_Record := RECORD
                               
 OUTPUT(SORT(CT_FIPS_Poverty,-number_of_missing_children),NAMED('CT_FIPS_Poverty'));
 OUTPUT(CORRELATION(SORT(CT_FIPS_Poverty,-number_of_missing_children), number_of_missing_children, poverty_nums), NAMED('poverty_correlation'));
+
+CT_FIPS_Population_Record := RECORD
+  STRING county_fip;
+  INTEGER number_of_missing_children;
+  INTEGER population;
+ END;
+ 
+ CT_FIPS_Population_Record CT_FIPS_Population_Transform(CT_FIPS Le, HMK.pop_estimatesDS Ri) := TRANSFORM
+  SELF.county_fip := Le.county_fips;
+  SELF.number_of_missing_children := (INTEGER)Le.number_of_missing_children;
+  SELF.population := (INTEGER)Ri.value;
+END;
+
+CT_FIPS_Population := JOIN(CT_FIPS, HMK.pop_estimatesDS(attribute = 'POP_ESTIMATE_2022'),
+  LEFT.county_fips = (STRING)RIGHT.fips_code,
+  CT_FIPS_Population_Transform(LEFT,RIGHT));
+  
+
+OUTPUT(SORT(CT_FIPS_Population,-number_of_missing_children),NAMED('CT_FIPS_Population'));
+OUTPUT(CORRELATION(SORT(CT_FIPS_Population,-number_of_missing_children),number_of_missing_children,population),NAMED('population_correlation'));
