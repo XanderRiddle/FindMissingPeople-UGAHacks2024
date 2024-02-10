@@ -16,7 +16,7 @@ HMK := $.File_AllData;
 //OUTPUT(COUNT(HMK.mc_byStateDS),NAMED('NCMEC_Cnt'));
 //OUTPUT(HMK.City_DS,NAMED('Cities'));
 //OUTPUT(COUNT(HMK.City_DS),NAMED('Cities_Cnt'));
-//OUTPUT(HMK.unemp_byCountyDS(Attribute = 'Unemployment_rate_2022'),NAMED('Unemployment_Rates'));
+//OUTPUT(HMK.unemp_byCountyDS(Attribute = 'Unemployment_rate_2022'),NAMED('Ri'));
 //OUTPUT(JOIN(HMK.mc_byStateDS, HMK.City_DS, LEFT.missingcity = RIGHT.city AND LEFT.missingstate = RIGHT.state_id),NAMED('Joined_Unemployment_County_Fips'));
 
 County_Fips_Of_Missing_Children_Record := RECORD 
@@ -36,4 +36,26 @@ County_Fips_Of_Missing_Children := JOIN(HMK.mc_byStateDS,HMK.City_DS,
 OUTPUT(County_Fips_Of_Missing_Children,NAMED('County_Fips'));
 
 CT_FIPS := TABLE(County_Fips_Of_Missing_Children,{County_Fips_Of_Missing_Children,number_of_missing_children := COUNT(GROUP)},county_fips);
-OUTPUT(SORT(CT_FIPS,-number_of_missing_children),NAMED('MissByFIPS'));
+Children_Per_Fip := OUTPUT(SORT(CT_FIPS,-number_of_missing_children),NAMED('MissByFIPS'));
+
+CT_FIPS_Unemployment_Record := RECORD
+  STRING county_fip;
+  INTEGER number_of_missing_children;
+  DECIMAL unemployment_rates;
+ END;
+ 
+ CT_FIPS_Unemployment_Record CT_FIPS_Unemployment_Transform(CT_FIPS Le, HMK.unemp_byCountyDS Ri) := TRANSFORM
+  SELF.county_fip := Le.county_fips;
+  SELF.number_of_missing_children := (INTEGER)Le.number_of_missing_children;
+  SELF.unemployment_rates := (DECIMAL)Ri.value;
+ END;
+ 
+ 
+ CT_FIPS_Unemployment := JOIN(CT_FIPS, HMK.unemp_byCountyDS(Attribute = 'Unemployment_rate_2022'),
+                              LEFT.county_fips = (STRING)RIGHT.fips_code,
+                              CT_FIPS_Unemployment_Transform(LEFT,RIGHT));
+                              
+OUTPUT(SORT(CT_FIPS_Unemployment,-number_of_missing_children),NAMED('CT_FIPS_Unemployment'));
+
+
+
