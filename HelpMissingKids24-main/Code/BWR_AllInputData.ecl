@@ -5,7 +5,7 @@ HMK := $.File_AllData;
 //OUTPUT(HMK.unemp_ratesDS,NAMED('US_UnempByMonth'));
 //OUTPUT(CHOOSEN(HMK.unemp_byCountyDS,3000),NAMED('Unemployment'));
 //OUTPUT(HMK.EducationDS,NAMED('Education'));
-//OUTPUT(HMK.pov_estimatesDS,NAMED('Poverty'));
+OUTPUT(HMK.pov_estimatesDS,NAMED('Poverty'));
 //OUTPUT(HMK.pop_estimatesDS,NAMED('Population'));
 //OUTPUT(HMK.PoliceDS,NAMED('Police'));
 //OUTPUT(HMK.FireDS,NAMED('Fire'));
@@ -56,6 +56,27 @@ CT_FIPS_Unemployment_Record := RECORD
                               CT_FIPS_Unemployment_Transform(LEFT,RIGHT));
                               
 OUTPUT(SORT(CT_FIPS_Unemployment,-number_of_missing_children),NAMED('CT_FIPS_Unemployment'));
+OUTPUT(CORRELATION(SORT(CT_FIPS_Unemployment,-number_of_missing_children), number_of_missing_children, unemployment_rates), NAMED('unemployment_correlation'));
 
+
+CT_FIPS_Poverty_Record := RECORD
+  STRING county_fip;
+  INTEGER number_of_missing_children;
+  DECIMAL poverty_nums;
+ END;
+ 
+ CT_FIPS_Poverty_Record CT_FIPS_Poverty_Transform(CT_FIPS Le, HMK.pov_estimatesDS Ri) := TRANSFORM
+  SELF.county_fip := Le.county_fips;
+  SELF.number_of_missing_children := (INTEGER)Le.number_of_missing_children;
+  SELF.poverty_nums := (DECIMAL)Ri.value;
+ END;
+ 
+ 
+ CT_FIPS_Poverty := JOIN(CT_FIPS, HMK.pov_estimatesDS(Attribute = 'POVALL_2021'),
+                              LEFT.county_fips = (STRING)RIGHT.fips_code,
+                              CT_FIPS_Poverty_Transform(LEFT,RIGHT));
+                              
+OUTPUT(SORT(CT_FIPS_Poverty,-number_of_missing_children),NAMED('CT_FIPS_Poverty'));
+OUTPUT(CORRELATION(SORT(CT_FIPS_Poverty,-number_of_missing_children), number_of_missing_children, poverty_nums), NAMED('poverty_correlation'));
 
 
